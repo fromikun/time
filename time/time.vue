@@ -1,69 +1,58 @@
-// 在App.vue文件中
 <template>
-  <div class="app">
-    <div v-if="isGrey" class="grey-bg">
-      <h1>番茄钟计时器</h1>
-      <div class="timer">
-        {{ time.minutes }}:{{
-          time.seconds < 10 ? "0" + time.seconds : time.seconds
-        }}
-      </div>
-      <button @click="toggleTimer">
-        {{ isTimerRunning ? "暂停" : "开始" }}
-      </button>
-    </div>
-    <audio ref="audio" src="completion-sound.mp3"></audio>
+  <div>
+    <div>{{ formatTime }}</div>
+    <button @click="toggleTimer">{{ isCounting ? "暂停" : "开始" }}</button>
+    <button @click="resetTimer">重置</button>
   </div>
 </template>
+
 <script>
 export default {
   data() {
     return {
-      isGrey: true,
-      isTimerRunning: false,
-      time: {
-        minutes: 0,
-        seconds: 5,
-      },
+      isCounting: false,
+      startTime: null,
+      currentTime: 0,
       timer: null,
     };
   },
+  computed: {
+    formatTime() {
+      const minutes = Math.floor(this.currentTime / 60);
+      const seconds = this.currentTime % 60;
+      return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+        2,
+        "0"
+      )}`;
+    },
+  },
   methods: {
     toggleTimer() {
-      this.isTimerRunning = !this.isTimerRunning;
-      if (this.isTimerRunning) {
-        this.timer = setInterval(this.countDown, 1000);
-      } else {
+      if (this.isCounting) {
         clearInterval(this.timer);
+      } else {
+        this.startTime = Date.now() - this.currentTime * 1000;
+        this.timer = setInterval(this.updateTime, 1000);
+      }
+      this.isCounting = !this.isCounting;
+    },
+    resetTimer() {
+      this.isCounting = false;
+      clearInterval(this.timer);
+      this.startTime = null;
+      this.currentTime = 0;
+    },
+    updateTime() {
+      this.currentTime = Math.floor((Date.now() - this.startTime) / 1000);
+      if (this.currentTime >= 60) {
+        clearInterval(this.timer);
+        this.playAudio();
       }
     },
-    countDown() {
-      if (this.time.minutes === 0 && this.time.seconds === 0) {
-        clearInterval(this.timer);
-        this.$refs.audio.play();
-      } else if (this.time.seconds === 0) {
-        this.time.minutes--;
-        this.time.seconds = 59;
-      } else {
-        this.time.seconds--;
-      }
+    playAudio() {
+      const audio = new Audio("path_to_audio_file.mp3");
+      audio.play();
     },
   },
 };
 </script>
-<style>
-.grey-bg {
-  background-color: #f2f2f2;
-  padding: 20px;
-  text-align: center;
-}
-.timer {
-  font-size: 40px;
-  margin: 20px 0;
-}
-button {
-  padding: 10px 20px;
-  font-size: 16px;
-}
-</style>
-```
